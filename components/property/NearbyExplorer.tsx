@@ -1,0 +1,76 @@
+"use client";
+
+import { useState } from "react";
+import type { NearbyResult } from "@/lib/poi";
+import { cn } from "@/lib/utils";
+import { NearbyInfra } from "@/components/property/NearbyInfra";
+import { PropertyMap } from "@/components/property/PropertyMap";
+import { Icon } from "@/components/ui/Icon";
+
+type RadiusKey = "1000" | "1500" | "3000";
+
+const OPTIONS: { key: RadiusKey; label: string }[] = [
+  { key: "1000", label: "1 км" },
+  { key: "1500", label: "1,5 км" },
+  { key: "3000", label: "3 км" },
+];
+
+/**
+ * «Что рядом» + карта под единым переключателем радиуса (1 / 1,5 / 3 км).
+ * Наборы данных для каждого радиуса считаются на сервере (SSG) и приходят
+ * пропсами — датасет 2ГИС в клиент не попадает.
+ */
+export function NearbyExplorer({
+  sets,
+  lat,
+  lng,
+  address,
+}: {
+  sets: Partial<Record<RadiusKey, NearbyResult | null>>;
+  lat: number;
+  lng: number;
+  address: string;
+}) {
+  const available = OPTIONS.filter((o) => sets[o.key]);
+  const [radius, setRadius] = useState<RadiusKey>(
+    sets["1500"] ? "1500" : (available[0]?.key ?? "1500"),
+  );
+  const data = sets[radius];
+  if (!data) return null;
+
+  const toggle = (
+    <div className="inline-flex items-center gap-0.5 rounded-full border border-line bg-surface p-0.5">
+      {available.map((o) => (
+        <button
+          key={o.key}
+          onClick={() => setRadius(o.key)}
+          className={cn(
+            "rounded-full px-2.5 py-1 text-xs font-semibold transition-colors",
+            radius === o.key ? "bg-ink text-text-invert" : "text-text-soft hover:text-text",
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <div>
+      <NearbyInfra data={data} control={toggle} />
+
+      <div className="mt-8">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="eyebrow">Объект на карте</div>
+          <span className="inline-flex items-center gap-1 text-xs text-text-muted">
+            <Icon name="arrow-up-right" size={13} className="text-gold" />
+            Пины и кластеры кликабельны — открываются в 2ГИС
+          </span>
+        </div>
+        <div className="max-w-2xl">
+          <PropertyMap lat={lat} lng={lng} pins={data.pins} radiusM={data.radiusM} address={address} />
+        </div>
+      </div>
+    </div>
+  );
+}
