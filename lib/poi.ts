@@ -168,11 +168,12 @@ export function nearby(lat: number, lng: number, radiusM = 1500): NearbyResult |
   }
   groups.sort((a, b) => (GROUPS[a.key]?.order ?? 99) - (GROUPS[b.key]?.order ?? 99));
 
-  // Пины для карты: ближайший из каждой группы + добить самыми близкими до 14.
+  // Пины для карты: ближайший из каждой группы + добить самыми близкими до 48
+  // (карта кластеризует их, поэтому берём с запасом).
   const pinSet = new Map<string, NearbyPlace>();
   for (const g of groups) pinSet.set(g.nearest.name + g.nearest.distM, g.nearest);
   for (const w of within) {
-    if (pinSet.size >= 14) break;
+    if (pinSet.size >= 48) break;
     pinSet.set(w.name + w.distM, w);
   }
 

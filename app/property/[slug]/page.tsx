@@ -26,8 +26,7 @@ import { LeadForm } from "@/components/LeadForm";
 import { PropertyCard } from "@/components/PropertyCard";
 import { Gallery } from "@/components/property/Gallery";
 import { BookingCtas } from "@/components/property/BookingCtas";
-import { NearbyInfraPanel } from "@/components/property/NearbyInfraPanel";
-import { PropertyMap } from "@/components/property/PropertyMap";
+import { NearbyExplorer } from "@/components/property/NearbyExplorer";
 import { nearby } from "@/lib/poi";
 
 export function generateStaticParams() {
@@ -351,10 +350,13 @@ export default async function PropertyPage({
 
             {/* ─────────── Инфраструктура ─────────── */}
             <section>
-              {near ? (
-                // Реальные данные 2ГИС (Бишкек) с переключателем радиуса
-                <NearbyInfraPanel
+              {near && p.coords ? (
+                // Реальные данные 2ГИС (Бишкек): группы + карта под общим радиусом
+                <NearbyExplorer
                   sets={{ "1000": near1000, "1500": near, "3000": near3000 }}
+                  lat={p.coords.lat}
+                  lng={p.coords.lng}
+                  address={p.address}
                 />
               ) : (
                 // Фолбэк для объектов вне покрытия 2ГИС (Иссык-Куль, зарубежье)
@@ -404,26 +406,11 @@ export default async function PropertyPage({
               </ul>
             </section>
 
-            {/* ─────────── Расположение / карта ─────────── */}
+            {/* ─── Расположение: отдельная секция-карта только вне покрытия 2ГИС ───
+                 (для Бишкека карта показывается выше, внутри блока «Что рядом») */}
+            {!near && (
             <section>
-              <BlockHead
-                eyebrow="Локация"
-                title="Расположение объекта"
-                subtitle={
-                  near
-                    ? "Объект и ближайшие места из 2ГИС — по реальным координатам. Нажмите на пин, чтобы открыть место в 2ГИС."
-                    : undefined
-                }
-              />
-              {near && p.coords ? (
-                <PropertyMap
-                  lat={p.coords.lat}
-                  lng={p.coords.lng}
-                  pins={near.pins}
-                  radiusM={near.radiusM}
-                  address={p.address}
-                />
-              ) : (
+              <BlockHead eyebrow="Локация" title="Расположение объекта" />
               <div className="relative h-72 overflow-hidden rounded-3xl border border-line bg-surface-3 shadow-soft sm:h-80">
                 {/* сетка «карты» */}
                 <div
@@ -478,8 +465,8 @@ export default async function PropertyPage({
                   )}
                 </div>
               </div>
-              )}
             </section>
+            )}
 
             {/* ─────────── Брокер объекта ─────────── */}
             {broker && (

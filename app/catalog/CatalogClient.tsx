@@ -12,9 +12,23 @@ import {
 import { cn, formatPrice, pluralize } from "@/lib/utils";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
-import { Icon } from "@/components/ui/Icon";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { CATEGORY_ICON } from "@/components/ui/category";
 import { PropertyCard } from "@/components/PropertyCard";
+import nearbyGroups from "@/lib/data/nearbyGroups.json";
+
+// Предвычисленные группы 2ГИС рядом с каждым объектом (радиус 1,5 км).
+const groupsData = nearbyGroups as Record<string, Record<string, number>>;
+
+// Фильтр «Рядом есть» — по группам инфраструктуры 2ГИС.
+const AMENITIES: { key: string; label: string; icon: IconName }[] = [
+  { key: "education", label: "Школа / садик", icon: "landmark" },
+  { key: "shops", label: "Магазины", icon: "store" },
+  { key: "health", label: "Аптека / врач", icon: "shield" },
+  { key: "finance", label: "Банк", icon: "layers" },
+  { key: "sport", label: "Спорт", icon: "trending" },
+  { key: "food", label: "Кафе", icon: "flame" },
+];
 
 type CategoryFilter = Category | "all";
 type TierFilter = Tier | "all";
@@ -87,7 +101,13 @@ export function CatalogClient({
       : "all",
   );
   const [q, setQ] = useState(initial.q);
+  const [amenities, setAmenities] = useState<string[]>([]);
   const [sort, setSort] = useState<SortKey>(initial.sort);
+
+  const toggleAmenity = (key: string) =>
+    setAmenities((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
   const [maxPrice, setMaxPrice] = useState<number>(() => {
     if (initial.max == null) return priceCeil;
     return Math.min(Math.max(initial.max, priceFloor), priceCeil);
@@ -105,6 +125,11 @@ export function CatalogClient({
       if (deal !== "all" && p.dealType !== deal) return false;
       if (district !== "all" && p.district !== district) return false;
       if (priceIsCapped && p.price > maxPrice) return false;
+      if (
+        amenities.length &&
+        !amenities.every((a) => (groupsData[p.id]?.[a] ?? 0) > 0)
+      )
+        return false;
       if (needle) {
         const haystack = [
           p.title,
@@ -130,7 +155,7 @@ export function CatalogClient({
     else sorted.sort((a, b) => b.aiScore.overall - a.aiScore.overall);
 
     return sorted;
-  }, [properties, category, tier, deal, district, priceIsCapped, maxPrice, q, sort]);
+  }, [properties, category, tier, deal, district, priceIsCapped, maxPrice, q, amenities, sort]);
 
   const count = results.length;
   const hasActiveFilters =
@@ -139,6 +164,7 @@ export function CatalogClient({
     deal !== "all" ||
     district !== "all" ||
     q.trim() !== "" ||
+    amenities.length > 0 ||
     priceIsCapped;
 
   function reset() {
@@ -147,6 +173,7 @@ export function CatalogClient({
     setDeal("all");
     setDistrict("all");
     setQ("");
+    setAmenities([]);
     setMaxPrice(priceCeil);
     setSort("score");
   }
@@ -339,6 +366,39 @@ export function CatalogClient({
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Рядом есть (данные 2ГИС) */}
+            <div>
+              <div className="flex items-center justify-between">
+                <FilterLabel>Рядом есть</FilterLabel>
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald">
+                  <Icon name="map-pin" size={11} /> 2ГИС
+                </span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {AMENITIES.map((a) => {
+                  const active = amenities.includes(a.key);
+                  return (
+                    <button
+                      key={a.key}
+                      onClick={() => toggleAmenity(a.key)}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs font-medium transition-colors",
+                        active
+                          ? "border-emerald bg-emerald-soft text-emerald"
+                          : "border-line bg-surface text-text-soft hover:border-emerald hover:text-emerald",
+                      )}
+                    >
+                      <Icon name={a.icon} size={13} />
+                      {a.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-[11px] leading-snug text-text-muted">
+                Показываем объекты, у которых выбранное есть в пешей доступности (по данным 2ГИС).
+              </p>
             </div>
 
             {hasActiveFilters && (

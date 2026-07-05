@@ -41,24 +41,26 @@ export function PropertyMap({
     return { x: cx + (eastM / distM) * px, y: cy - (northM / distM) * px };
   };
 
-  const rings = [500, 1000, 1500].filter((r) => r <= radiusM + 1);
+  const rings = [500, 1000, 1500, 3000].filter((r) => r <= radiusM + 1);
 
-  // Расставляем пины и мягко разводим накладывающиеся (declutter).
-  const placed: { x: number; y: number; p: NearbyPlace }[] = [];
-  for (const p of pins.slice(0, 12)) {
+  // Кластеризация: соседние по экрану места сливаем в один маркер со счётчиком,
+  // чтобы при большом радиусе карта не превращалась в кашу из пинов.
+  const CLUSTER_PX = 22;
+  type Cluster = { x: number; y: number; members: NearbyPlace[] };
+  const clusters: Cluster[] = [];
+  for (const p of pins) {
+    // pins отсортированы по возрастанию расстояния — первый в кластере ближайший
     let { x, y } = project(p.lat, p.lng);
-    for (let iter = 0; iter < 12; iter++) {
-      const hit = placed.find((q) => Math.hypot(q.x - x, q.y - y) < 23);
-      if (!hit) break;
-      const a = Math.atan2(y - hit.y || 0.01, x - hit.x || 0.01);
-      x = hit.x + Math.cos(a) * 23;
-      y = hit.y + Math.sin(a) * 23;
-    }
-    // держим внутри рамки
     const d = Math.hypot(x - cx, y - cy);
     if (d > R - 8) { const k = (R - 8) / d; x = cx + (x - cx) * k; y = cy + (y - cy) * k; }
-    placed.push({ x, y, p });
+    const near = clusters.find((c) => Math.hypot(c.x - x, c.y - y) < CLUSTER_PX);
+    if (near) near.members.push(p);
+    else clusters.push({ x, y, members: [p] });
   }
+  // Не более 20 маркеров — оставляем ближайшие (по первому члену).
+  const shown = clusters
+    .sort((a, b) => a.members[0].distM - b.members[0].distM)
+    .slice(0, 20);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-soft">
@@ -88,37 +90,58 @@ export function PropertyMap({
             </g>
           ))}
 
-          {/* пины POI (реальные места 2ГИС) — кликабельны, открываются в 2ГИС */}
-          {placed.map(({ x, y, p }, i) => (
-            <a
-              key={i}
-              href={gis2Search(p.name, p.lat, p.lng)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group/pin"
-              style={{ cursor: "pointer" }}
-            >
-              <title>
-                {`${p.name} · ${fmtM(p.distM)} · ${p.walkMin} мин пешком${
-                  p.rating != null ? ` · ★ ${p.rating.toFixed(1)}` : ""
-                } — открыть в 2ГИС`}
-              </title>
-              {/* невидимая увеличенная зона клика */}
-              <circle cx={x} cy={y} r={14} fill="transparent" />
-              <circle
-                cx={x}
-                cy={y}
-                r={11}
-                fill="#fff"
-                stroke="#E7E2D9"
-                strokeWidth={1}
-                className="transition-all group-hover/pin:stroke-[#B98B3E] group-hover/pin:stroke-2"
-              />
-              <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={12}>
-                {p.emoji}
-              </text>
-            </a>
-          ))}
+          {/* маркеры 2ГИС — одиночные места или кластеры со счётчиком, кликабельны */}
+          {shown.map(({ x, y, members }, i) => {
+            const rep = members[0];
+            const n = members.length;
+            const title =
+              n === 1
+                ? `${rep.name} · ${fmtM(rep.distM)} · ${rep.walkMin} мин${
+                    rep.rating != null ? ` · ★ ${rep.rating.toFixed(1)}` : ""
+                  } — открыть в 2ГИС`
+                : `${n} мест 2ГИС рядом · ближайшее: ${rep.name} (${fmtM(rep.distM)}) — открыть в 2ГИС`;
+            return (
+              <a
+                key={i}
+                href={gis2Search(rep.name, rep.lat, rep.lng)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group/pin"
+                style={{ cursor: "pointer" }}
+              >
+                <title>{title}</title>
+                <circle cx={x} cy={y} r={16} fill="transparent" />
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={n > 1 ? 13 : 11}
+                  fill="#fff"
+                  stroke={n > 1 ? "#B98B3E" : "#E7E2D9"}
+                  strokeWidth={n > 1 ? 1.5 : 1}
+                  className="transition-all group-hover/pin:stroke-[#B98B3E] group-hover/pin:stroke-2"
+                />
+                <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={12}>
+                  {rep.emoji}
+                </text>
+                {n > 1 && (
+                  <>
+                    <circle cx={x + 10} cy={y - 10} r={7} fill="#0C1116" />
+                    <text
+                      x={x + 10}
+                      y={y - 10}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fontSize={8}
+                      fontWeight={700}
+                      fill="#fff"
+                    >
+                      {n}
+                    </text>
+                  </>
+                )}
+              </a>
+            );
+          })}
 
           {/* объект в центре */}
           <circle cx={cx} cy={cy} r={16} fill="#B98B3E" fillOpacity={0.16} />
