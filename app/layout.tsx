@@ -3,6 +3,7 @@ import "./globals.css";
 import { site } from "@/lib/site";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
+import { LocaleProvider } from "@/components/i18n";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -27,9 +28,11 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body className="flex min-h-screen flex-col">
-        <Nav />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <LocaleProvider>
+          <Nav />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </LocaleProvider>
       </body>
     </html>
   );

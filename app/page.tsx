@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { PropertyCard } from "@/components/PropertyCard";
 import { BrokerCard } from "@/components/BrokerCard";
-import { SearchBar } from "@/components/SearchBar";
+import { Hero } from "@/components/home/Hero";
 import { FindAssistant } from "@/components/ai/FindAssistant";
 import { LeadForm } from "@/components/LeadForm";
 
@@ -33,27 +33,11 @@ export default function HomePage() {
   const count = (pred: (p: (typeof properties)[number]) => boolean) =>
     properties.filter(pred).length;
 
-  const trust: { icon: IconName; value: string; label: string }[] = [
-    {
-      icon: "shield",
-      value: String(properties.length),
-      label: pluralize(properties.length, [
-        "проверенный объект",
-        "проверенных объекта",
-        "проверенных объектов",
-      ]),
-    },
-    {
-      icon: "users",
-      value: String(brokers.length),
-      label: pluralize(brokers.length, [
-        "брокер-эксперт",
-        "брокера-эксперта",
-        "брокеров-экспертов",
-      ]),
-    },
-    { icon: "sparkles", value: "AI", label: "анализ каждого объекта" },
-    { icon: "scale", value: "0", label: "скрытых комиссий" },
+  const heroStats: { key: "verified" | "brokers" | "ai" | "fees"; icon: IconName; value: string }[] = [
+    { key: "verified", icon: "shield", value: String(properties.length) },
+    { key: "brokers", icon: "users", value: String(brokers.length) },
+    { key: "ai", icon: "sparkles", value: "AI" },
+    { key: "fees", icon: "scale", value: "0" },
   ];
 
   const tiles: {
@@ -101,52 +85,8 @@ export default function HomePage() {
 
   return (
     <>
-      {/* ─────────────────────────── HERO ─────────────────────────── */}
-      <section className="relative isolate overflow-hidden bg-ink text-text-invert">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-ink-soft via-ink to-ink" />
-        <div className="pointer-events-none absolute -right-40 -top-40 -z-10 h-[34rem] w-[34rem] rounded-full bg-gold/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-48 -left-40 -z-10 h-[30rem] w-[30rem] rounded-full bg-emerald/10 blur-3xl" />
-
-        <div className="container py-20 sm:py-28 lg:py-32">
-          <div className="mx-auto max-w-3xl animate-fade-up text-center">
-            <span className="eyebrow justify-center">
-              <Icon name="sparkles" size={14} className="text-gold-bright" />
-              {site.tagline}
-            </span>
-            <h1 className="mt-5 text-balance font-display text-4xl leading-[1.05] text-text-invert sm:text-5xl lg:text-[3.75rem]">
-              Недвижимость, которую не просто размещают —{" "}
-              <span className="text-gold-bright">её продают.</span>
-            </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-relaxed text-white/70 sm:text-lg">
-              {site.description}
-            </p>
-          </div>
-
-          <div className="mx-auto mt-9 max-w-2xl">
-            <SearchBar dark />
-          </div>
-
-          <div className="mx-auto mt-12 flex max-w-3xl flex-wrap items-center justify-center gap-x-8 gap-y-5">
-            {trust.map((t, i) => (
-              <div
-                key={t.label}
-                className={cn(
-                  "flex items-center gap-2.5",
-                  i > 0 && "sm:border-l sm:border-white/10 sm:pl-8",
-                )}
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-gold-bright">
-                  <Icon name={t.icon} size={16} />
-                </span>
-                <div className="text-left">
-                  <div className="text-base font-semibold leading-none">{t.value}</div>
-                  <div className="mt-1 text-xs text-white/55">{t.label}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ─────────────────────────── HERO (i18n) ─────────────────────────── */}
+      <Hero stats={heroStats} />
 
       {/* ────────────────────── БЫСТРЫЕ КАТЕГОРИИ ────────────────────── */}
       <Section className="bg-surface">

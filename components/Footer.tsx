@@ -1,37 +1,53 @@
+"use client";
+
 import Link from "next/link";
-import { primaryNav, site } from "@/lib/site";
+import { site } from "@/lib/site";
+import { useI18n } from "@/components/i18n";
 import { Icon } from "@/components/ui/Icon";
 
-const cols: { title: string; links: { label: string; href: string }[] }[] = [
-  {
-    title: "Каталог",
-    links: [
-      { label: "Квартиры", href: "/catalog?category=apartment" },
-      { label: "Дома", href: "/catalog?category=house" },
-      { label: "Участки", href: "/catalog?category=land" },
-      { label: "Коммерция", href: "/catalog?category=commercial" },
-      { label: "Премиум", href: "/premium" },
-    ],
-  },
-  {
-    title: "Сервисы",
-    links: [
-      { label: "AI-анализ объекта", href: "/ai" },
-      { label: "Продать объект", href: "/sell" },
-      { label: "Зарубежная недвижимость", href: "/abroad" },
-      { label: "Наши брокеры", href: "/brokers" },
-    ],
-  },
-  {
-    title: "Кабинеты",
-    links: [
-      { label: "Кабинет продавца", href: "/dashboard/seller" },
-      { label: "Кабинет брокера", href: "/dashboard/broker" },
-    ],
-  },
-];
+const NAV_KEYS = ["catalog", "premium", "abroad", "brokers", "ai", "sell"] as const;
+const NAV_HREF: Record<(typeof NAV_KEYS)[number], string> = {
+  catalog: "/catalog",
+  premium: "/premium",
+  abroad: "/abroad",
+  brokers: "/brokers",
+  ai: "/ai",
+  sell: "/sell",
+};
 
 export function Footer() {
+  const { d } = useI18n();
+  const l = d.footer.links;
+
+  const cols = [
+    {
+      title: d.footer.colCatalog,
+      links: [
+        { label: l.apartments, href: "/catalog?category=apartment" },
+        { label: l.houses, href: "/catalog?category=house" },
+        { label: l.land, href: "/catalog?category=land" },
+        { label: l.commercial, href: "/catalog?category=commercial" },
+        { label: l.premium, href: "/premium" },
+      ],
+    },
+    {
+      title: d.footer.colServices,
+      links: [
+        { label: l.aiAnalysis, href: "/ai" },
+        { label: l.sell, href: "/sell" },
+        { label: l.abroad, href: "/abroad" },
+        { label: l.brokers, href: "/brokers" },
+      ],
+    },
+    {
+      title: d.footer.colCabinets,
+      links: [
+        { label: l.sellerCabinet, href: "/dashboard/seller" },
+        { label: l.brokerCabinet, href: "/dashboard/broker" },
+      ],
+    },
+  ];
+
   return (
     <footer className="bg-ink text-text-invert">
       <div className="container py-14">
@@ -44,7 +60,7 @@ export function Footer() {
               <span className="font-display text-xl font-semibold">{site.name}</span>
             </div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/60">
-              {site.slogan}
+              {d.footer.slogan}
             </p>
             <div className="mt-5 flex flex-col gap-1.5 text-sm text-white/70">
               <a href={`tel:${site.phone}`} className="inline-flex items-center gap-2 hover:text-white">
@@ -63,10 +79,10 @@ export function Footer() {
             <div key={col.title}>
               <h4 className="text-sm font-semibold text-white">{col.title}</h4>
               <ul className="mt-4 space-y-2.5">
-                {col.links.map((l) => (
-                  <li key={l.href}>
-                    <Link href={l.href} className="text-sm text-white/60 hover:text-white">
-                      {l.label}
+                {col.links.map((li) => (
+                  <li key={li.href}>
+                    <Link href={li.href} className="text-sm text-white/60 hover:text-white">
+                      {li.label}
                     </Link>
                   </li>
                 ))}
@@ -77,12 +93,12 @@ export function Footer() {
 
         <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center">
           <p className="text-xs text-white/45">
-            © {site.name} · {site.tagline}. AI-анализ не является юридическим заключением.
+            © {site.name} · {site.tagline}. {d.footer.disclaimer}
           </p>
           <nav className="flex flex-wrap gap-4">
-            {primaryNav.map((item) => (
-              <Link key={item.href} href={item.href} className="text-xs text-white/55 hover:text-white">
-                {item.label}
+            {NAV_KEYS.map((k) => (
+              <Link key={k} href={NAV_HREF[k]} className="text-xs text-white/55 hover:text-white">
+                {d.nav[k]}
               </Link>
             ))}
           </nav>
