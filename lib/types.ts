@@ -126,7 +126,14 @@ export interface District {
   blurb: string;
   tone: number;
   priceFromUsd: number;
+  pricePerM2: number; // ориентир $/м² (для индекса и гидов)
   tags: string[];
+  // Контент для гида по району:
+  vibe?: string; // характер района одним абзацем
+  goodFor?: string[]; // кому подходит
+  pros?: string[];
+  cons?: string[];
+  coords?: { lat: number; lng: number }; // центр района для инфраструктуры 2ГИС
 }
 
 export interface AbroadDirection {

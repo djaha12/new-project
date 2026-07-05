@@ -4,6 +4,8 @@ import { site } from "@/lib/site";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { LocaleProvider } from "@/components/i18n";
+import { CurrencyProvider } from "@/lib/currency";
+import { FavoritesProvider } from "@/lib/useFavorites";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -29,9 +31,13 @@ export default function RootLayout({
     <html lang="ru">
       <body className="flex min-h-screen flex-col">
         <LocaleProvider>
-          <Nav />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <CurrencyProvider>
+            <FavoritesProvider>
+              <Nav />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </FavoritesProvider>
+          </CurrencyProvider>
         </LocaleProvider>
       </body>
     </html>
