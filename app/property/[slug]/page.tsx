@@ -26,6 +26,9 @@ import { LeadForm } from "@/components/LeadForm";
 import { PropertyCard } from "@/components/PropertyCard";
 import { Gallery } from "@/components/property/Gallery";
 import { BookingCtas } from "@/components/property/BookingCtas";
+import { NearbyInfra } from "@/components/property/NearbyInfra";
+import { PropertyMap } from "@/components/property/PropertyMap";
+import { nearby } from "@/lib/poi";
 
 export function generateStaticParams() {
   return properties.map((p) => ({ slug: p.slug }));
@@ -56,6 +59,10 @@ export default async function PropertyPage({
   const broker = getBroker(p.brokerId);
   const tier = scoreTier(p.aiScore.overall);
   const similar = getSimilar(p, 3);
+
+  // Реальная инфраструктура вокруг объекта по данным 2ГИС (только Бишкек).
+  // Вычисляется на этапе SSG-сборки — в клиент уходит лишь результат.
+  const near = p.coords ? nearby(p.coords.lat, p.coords.lng) : null;
 
   const created = new Date(p.createdAt).toLocaleDateString("ru-RU", {
     day: "numeric",
@@ -341,23 +348,31 @@ export default async function PropertyPage({
 
             {/* ─────────── Инфраструктура ─────────── */}
             <section>
-              <BlockHead eyebrow="Что рядом" title="Инфраструктура и окружение" />
-              <ul className="grid gap-x-10 sm:grid-cols-2">
-                {p.infrastructure.map((row) => (
-                  <li
-                    key={row.label}
-                    className="flex items-center justify-between gap-4 border-b border-line py-3.5 text-sm"
-                  >
-                    <span className="flex items-center gap-2 text-text-soft">
-                      <Icon name="map-pin" size={15} className="text-gold" />
-                      {row.label}
-                    </span>
-                    <span className="text-right font-medium text-text">
-                      {row.value}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              {near ? (
+                // Реальные данные 2ГИС (Бишкек)
+                <NearbyInfra data={near} />
+              ) : (
+                // Фолбэк для объектов вне покрытия 2ГИС (Иссык-Куль, зарубежье)
+                <>
+                  <BlockHead eyebrow="Что рядом" title="Инфраструктура и окружение" />
+                  <ul className="grid gap-x-10 sm:grid-cols-2">
+                    {p.infrastructure.map((row) => (
+                      <li
+                        key={row.label}
+                        className="flex items-center justify-between gap-4 border-b border-line py-3.5 text-sm"
+                      >
+                        <span className="flex items-center gap-2 text-text-soft">
+                          <Icon name="map-pin" size={15} className="text-gold" />
+                          {row.label}
+                        </span>
+                        <span className="text-right font-medium text-text">
+                          {row.value}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </section>
 
             {/* ─────────── На что обратить внимание ─────────── */}
@@ -386,7 +401,24 @@ export default async function PropertyPage({
 
             {/* ─────────── Расположение / карта ─────────── */}
             <section>
-              <BlockHead eyebrow="Локация" title="Расположение объекта" />
+              <BlockHead
+                eyebrow="Локация"
+                title="Расположение объекта"
+                subtitle={
+                  near
+                    ? "Объект и ближайшие места из 2ГИС — по реальным координатам."
+                    : undefined
+                }
+              />
+              {near && p.coords ? (
+                <PropertyMap
+                  lat={p.coords.lat}
+                  lng={p.coords.lng}
+                  pins={near.pins}
+                  radiusM={near.radiusM}
+                  address={p.address}
+                />
+              ) : (
               <div className="relative h-72 overflow-hidden rounded-3xl border border-line bg-surface-3 shadow-soft sm:h-80">
                 {/* сетка «карты» */}
                 <div
@@ -441,6 +473,7 @@ export default async function PropertyPage({
                   )}
                 </div>
               </div>
+              )}
             </section>
 
             {/* ─────────── Брокер объекта ─────────── */}
