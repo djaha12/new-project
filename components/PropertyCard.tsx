@@ -43,13 +43,15 @@ export function PropertyCard({
   const monthly = showMortgage ? monthlyPayment(p.price * 0.8, 14, 15) : 0;
 
   return (
-    <Link
-      href={href}
+    // Паттерн «stretched link»: карточка — div, навигация — оверлей-ссылка,
+    // интерактив (звезда) — сиблинг выше по z. Так <button> не вложен в <a>.
+    <div
       className={cn(
-        "group flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-lift",
+        "group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-lift",
         className,
       )}
     >
+      <Link href={href} aria-label={p.title} className="absolute inset-0 z-[1]" />
       <PropertyMedia tone={p.mediaTone} category={p.category} className="aspect-[4/3]">
         <div className="absolute inset-x-0 top-0 flex items-start justify-between p-3">
           <div className="flex flex-wrap gap-1.5">
@@ -72,7 +74,7 @@ export function PropertyCard({
                 {p.videoSec}с
               </span>
             )}
-            <FavoriteButton slug={p.slug} className="bg-white/90 shadow-soft backdrop-blur" />
+            <FavoriteButton slug={p.slug} className="relative z-[2] bg-white/90 shadow-soft backdrop-blur" />
           </div>
         </div>
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-3">
@@ -139,6 +141,6 @@ export function PropertyCard({
           </span>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

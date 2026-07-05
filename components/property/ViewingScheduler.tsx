@@ -69,6 +69,43 @@ function icsStamp(d: Date): string {
   );
 }
 
+/** DTSTAMP по RFC 5545 — в UTC с суффиксом Z: 20260705T060000Z */
+function icsStampUtc(d: Date): string {
+  return (
+    d.getUTCFullYear() +
+    pad(d.getUTCMonth() + 1) +
+    pad(d.getUTCDate()) +
+    "T" +
+    pad(d.getUTCHours()) +
+    pad(d.getUTCMinutes()) +
+    "00Z"
+  );
+}
+
+/** Фолдинг content-line по 75 октетов (RFC 5545 §3.1): продолжения с пробела. */
+function foldIcsLine(line: string): string {
+  const enc = new TextEncoder();
+  if (enc.encode(line).length <= 75) return line;
+  const out: string[] = [];
+  let cur = "";
+  let curBytes = 0;
+  for (const ch of line) {
+    const b = enc.encode(ch).length;
+    // первая строка ≤75, продолжения ≤74 (плюс ведущий пробел = 75)
+    const limit = out.length === 0 ? 75 : 74;
+    if (curBytes + b > limit) {
+      out.push(cur);
+      cur = ch;
+      curBytes = b;
+    } else {
+      cur += ch;
+      curBytes += b;
+    }
+  }
+  if (cur) out.push(cur);
+  return out.map((s, i) => (i === 0 ? s : " " + s)).join("\r\n");
+}
+
 /** Экранирование текстовых значений .ics (RFC 5545). */
 function icsEscape(s: string): string {
   return s
@@ -100,8 +137,8 @@ export function ViewingScheduler({
   const [hour, setHour] = useState<number | null>(null);
   const [leadOpen, setLeadOpen] = useState(false);
 
-  /* Ближайшие 7 дней от сегодняшней даты. Считается на клиенте — модалка
-     закрыта при SSR, поэтому расхождений гидратации нет. */
+  /* Ближайшие 7 дней. Пересчитываем при КАЖДОМ открытии модалки — чтобы за
+     полночь набор дат и «сегодня/завтра» не устаревали (модалка не размонтируется). */
   const days = useMemo(() => {
     const base = new Date();
     base.setHours(0, 0, 0, 0);
@@ -110,7 +147,12 @@ export function ViewingScheduler({
       d.setDate(base.getDate() + i);
       return d;
     });
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+  // «Сейчас» фиксируем на момент открытия — для отсева уже прошедших слотов сегодня.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const nowRef = useMemo(() => new Date(), [open]);
+  const pastToday = (h: number) => dayIdx === 0 && h <= nowRef.getHours();
 
   /* Блокировка прокрутки фона + закрытие по Esc. */
   useEffect(() => {
@@ -128,7 +170,7 @@ export function ViewingScheduler({
   }, [open]);
 
   const selectedDay = days[dayIdx];
-  const ready = hour !== null;
+  const ready = hour !== null && !pastToday(hour);
 
   const start = useMemo(() => {
     const d = new Date(selectedDay);
@@ -163,7 +205,7 @@ export function ViewingScheduler({
       "METHOD:PUBLISH",
       "BEGIN:VEVENT",
       `UID:${Date.now()}-${Math.round(Math.random() * 1e6)}@mulk.kg`,
-      `DTSTAMP:${icsStamp(new Date())}`,
+      `DTSTAMP:${icsStampUtc(new Date())}`,
       `DTSTART:${icsStamp(start)}`,
       `DTEND:${icsStamp(end)}`,
       `SUMMARY:${icsEscape(`Просмотр ${propertyTitle}`)}`,
@@ -175,7 +217,8 @@ export function ViewingScheduler({
       "END:VEVENT",
       "END:VCALENDAR",
     ];
-    const blob = new Blob([lines.join("\r\n")], {
+    const ics = lines.map(foldIcsLine).join("\r\n") + "\r\n";
+    const blob = new Blob([ics], {
       type: "text/calendar;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
@@ -272,7 +315,10 @@ export function ViewingScheduler({
                         <button
                           key={d.toISOString()}
                           type="button"
-                          onClick={() => setDayIdx(i)}
+                          onClick={() => {
+                            setDayIdx(i);
+                            setHour(null);
+                          }}
                           className={cn(
                             "flex flex-col items-center rounded-xl border py-2.5 transition-all",
                             active
@@ -327,16 +373,20 @@ export function ViewingScheduler({
                         <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-5">
                           {period.hours.map((h) => {
                             const active = hour === h;
+                            const disabled = pastToday(h);
                             return (
                               <button
                                 key={h}
                                 type="button"
+                                disabled={disabled}
                                 onClick={() => setHour(h)}
                                 className={cn(
                                   "rounded-lg border py-2 text-sm font-medium tabular-nums transition-all",
-                                  active
-                                    ? "border-ink bg-ink text-text-invert shadow-soft"
-                                    : "border-line bg-surface text-text hover:border-line-strong hover:bg-surface-2",
+                                  disabled
+                                    ? "cursor-not-allowed border-line bg-surface-2 text-text-muted line-through opacity-50"
+                                    : active
+                                      ? "border-ink bg-ink text-text-invert shadow-soft"
+                                      : "border-line bg-surface text-text hover:border-line-strong hover:bg-surface-2",
                                 )}
                               >
                                 {pad(h)}:00

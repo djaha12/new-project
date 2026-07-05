@@ -285,7 +285,7 @@ export default async function PropertyPage({
                 title="Ипотека и ежемесячный платёж"
                 subtitle="Рассчитайте платёж и подберите программу банка КР. Или узнайте, объект какой цены вам по силам."
               />
-              <MortgageCalculator priceUsd={p.price} />
+              <MortgageCalculator key={p.slug} priceUsd={p.price} />
             </section>
 
             {/* ─────────── Что можно построить? (только участки) ─────────── */}
@@ -365,6 +365,7 @@ export default async function PropertyPage({
               <div className="mt-8 border-t border-line pt-8">
                 <div className="eyebrow mb-4">Калькулятор доходности</div>
                 <InvestmentCalculator
+                  key={p.slug}
                   priceUsd={p.price}
                   district={p.isForeign ? undefined : p.district}
                   abroadId={abroadId}

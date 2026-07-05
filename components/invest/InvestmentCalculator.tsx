@@ -44,13 +44,14 @@ export function InvestmentCalculator({
   const money = (usd: number) => fmtMoney(usd, currency, rate);
 
   const m = useMemo(() => {
-    const p = Math.max(0, price);
-    const yrs = Math.min(40, Math.max(1, Math.round(years)));
-    const annualGross = Math.max(0, monthlyRent) * 12;
-    const netAnnual = annualGross * (1 - Math.max(0, costsPct) / 100);
+    const fin = (v: number) => (Number.isFinite(v) ? v : 0);
+    const p = Math.max(0, fin(price));
+    const yrs = Math.min(40, Math.max(1, Math.round(fin(years) || 1)));
+    const annualGross = Math.max(0, fin(monthlyRent)) * 12;
+    const netAnnual = annualGross * (1 - Math.max(0, fin(costsPct)) / 100);
     const grossYield = p > 0 ? (annualGross / p) * 100 : 0;
     const netYield = p > 0 ? (netAnnual / p) * 100 : 0;
-    const payback = netAnnual > 0 ? p / netAnnual : Infinity;
+    const payback = p > 0 && netAnnual > 0 ? p / netAnnual : Infinity;
 
     // Проекция капитала по годам: стоимость объекта (рост) + накопленная аренда.
     const points = Array.from({ length: yrs + 1 }, (_, t) => {
@@ -64,7 +65,8 @@ export function InvestmentCalculator({
     const rentTotal = netAnnual * yrs;
     const totalReturn = rentTotal + capitalGain;
     const totalReturnPct = p > 0 ? (totalReturn / p) * 100 : 0;
-    const cashOnCash = p > 0 && yrs > 0 ? totalReturnPct / yrs : 0;
+    // Cash-on-cash при покупке за наличные (без кредита) = чистая арендная доходность.
+    const cashOnCash = netYield;
 
     return {
       p,

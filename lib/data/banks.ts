@@ -71,6 +71,7 @@ export const mortgagePrograms: MortgageProgram[] = [
 export function monthlyPayment(principal: number, annualRatePct: number, years: number): number {
   const r = annualRatePct / 100 / 12;
   const n = years * 12;
+  if (n <= 0 || !Number.isFinite(principal) || principal <= 0) return 0;
   if (r === 0) return principal / n;
   return (principal * r) / (1 - Math.pow(1 + r, -n));
 }

@@ -89,7 +89,8 @@ export function EstimateForm({ className }: { className?: string }) {
     }
   }
 
-  const unitLabel = areaUnit === "m2" ? "м²" : "сотку";
+  // Единицу для панели результата берём из ОТВЕТА (result.areaUnit), а не из
+  // текущего состояния формы — иначе смена категории подпишет числа неверно.
   const selectCls =
     "h-11 w-full rounded-xl border border-line bg-surface px-4 text-sm text-text outline-none transition-colors focus:border-gold";
   const inputCls =
@@ -239,7 +240,7 @@ export function EstimateForm({ className }: { className?: string }) {
                   <div className="mt-1 text-base font-semibold text-text-invert">
                     <Price usd={result.medianUnit} />
                     <span className="ml-1 text-xs font-normal text-white/50">
-                      за {unitLabel}
+                      за {result.areaUnit === "m2" ? "м²" : "сотку"}
                     </span>
                   </div>
                 </div>

@@ -58,7 +58,8 @@ export function useCurrency(): Ctx {
  *  которую замена на пробел превращает в лишний разряд («3 409,258» → «3 409 258»). */
 export function fmtMoney(usd: number, currency: Currency, rate = USD_KGS): string {
   if (currency === "KGS") {
-    const som = Math.round((usd * rate) / 1000) * 1000;
+    const raw = usd * rate;
+    const som = raw >= 100000 ? Math.round(raw / 100) * 100 : Math.round(raw);
     return som.toLocaleString("ru-RU").replace(/ /g, " ") + " сом";
   }
   return "$ " + Math.round(usd).toLocaleString("ru-RU").replace(/ /g, " ");

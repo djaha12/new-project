@@ -76,9 +76,11 @@ export function estimateFromInput(input: EstimateInput): Estimate {
 
   const compMedian = comps.length >= 2 ? median(comps.map(unitPrice)) : null;
 
-  // Якорь по району (индекс $/м²) — только для домашнего рынка и метража.
+  // Якорь по району (индекс $/м²) — ЖИЛОЙ индекс, поэтому только для жилья
+  // (квартиры/комнаты) на домашнем рынке. Для коммерции/домов не применяем.
+  const isResidential = input.category === "apartment" || input.category === "room";
   const dObj =
-    !isForeign && input.areaUnit === "m2" && input.district
+    !isForeign && input.areaUnit === "m2" && isResidential && input.district
       ? districts.find((d) => d.name === input.district)
       : undefined;
   const districtUnit = dObj?.pricePerM2 ?? null;
@@ -89,9 +91,14 @@ export function estimateFromInput(input: EstimateInput): Estimate {
   else if (compMedian != null) baseUnit = compMedian;
   else if (districtUnit != null) baseUnit = districtUnit;
   else {
-    // Фолбэк: медиана по категории на том же рынке (любой район).
+    // Фолбэк: медиана по категории на том же рынке (та же страна для зарубежья).
     const wide = properties.filter(
-      (p) => p.category === input.category && p.areaUnit === input.areaUnit && Boolean(p.isForeign) === isForeign,
+      (p) =>
+        p.category === input.category &&
+        p.areaUnit === input.areaUnit &&
+        p.id !== input.excludeId &&
+        Boolean(p.isForeign) === isForeign &&
+        (!isForeign || !input.country || p.country === input.country),
     );
     baseUnit = wide.length ? median(wide.map(unitPrice)) : 0;
   }
