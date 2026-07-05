@@ -4,8 +4,9 @@ import {
   TIER_LABELS,
   type Property,
 } from "@/lib/types";
-import { cn, formatArea, formatPrice } from "@/lib/utils";
+import { cn, formatArea, formatPrice, pluralize } from "@/lib/utils";
 import { getBroker } from "@/lib/data/brokers";
+import nearbyCounts from "@/lib/data/nearbyCounts.json";
 import { PropertyMedia } from "@/components/PropertyMedia";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
@@ -28,6 +29,9 @@ export function PropertyCard({
   meta.push(formatArea(p.area, p.areaUnit));
   if (p.floor && p.floors) meta.push(`${p.floor}/${p.floors} эт.`);
   if (p.category === "house" && p.landArea) meta.push(`уч. ${p.landArea} сот.`);
+
+  // Кол-во мест 2ГИС в радиусе 1,5 км (предвычислено; 0 у загородных объектов).
+  const nearbyN = (nearbyCounts as Record<string, number>)[p.id] ?? 0;
 
   return (
     <Link
@@ -91,6 +95,14 @@ export function PropertyCard({
             </span>
           ))}
         </div>
+
+        {nearbyN > 0 && (
+          <div className="mt-2.5 inline-flex items-center gap-1 self-start rounded-md bg-emerald-soft px-1.5 py-1 text-[11px] font-medium text-emerald">
+            <Icon name="map-pin" size={11} />
+            {nearbyN} {pluralize(nearbyN, ["место", "места", "мест"])} рядом
+            <span className="text-emerald/70">· 2ГИС</span>
+          </div>
+        )}
 
         <div className="mt-auto flex items-center justify-between border-t border-line pt-3">
           <span className="truncate text-xs text-text-muted">

@@ -183,8 +183,3 @@ export function nearby(lat: number, lng: number, radiusM = 1500): NearbyResult |
     radiusM,
   };
 }
-
-/** Ссылка на объект в 2ГИС по координатам. */
-export function gis2Url(lat: number, lng: number): string {
-  return `https://2gis.kg/bishkek?m=${lng}%2C${lat}%2F16`;
-}

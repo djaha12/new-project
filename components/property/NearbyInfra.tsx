@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { NearbyResult } from "@/lib/poi";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/ui/Icon";
@@ -9,14 +10,25 @@ function fmtDist(m: number): string {
 }
 
 /** «Что рядом» — реальная инфраструктура по данным 2ГИС. */
-export function NearbyInfra({ data, className }: { data: NearbyResult; className?: string }) {
+export function NearbyInfra({
+  data,
+  control,
+  className,
+}: {
+  data: NearbyResult;
+  control?: ReactNode;
+  className?: string;
+}) {
   return (
     <div className={cn("", className)}>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="eyebrow">Инфраструктура рядом</div>
-        <Badge tone="emerald" icon="map-pin">
-          По данным 2ГИС · {data.total} мест в радиусе {fmtDist(data.radiusM)}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          {control}
+          <Badge tone="emerald" icon="map-pin">
+            По данным 2ГИС · {data.total} мест в радиусе {fmtDist(data.radiusM)}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

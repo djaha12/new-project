@@ -1,6 +1,8 @@
 import type { NearbyPlace } from "@/lib/poi";
-import { gis2Url } from "@/lib/poi";
+import { gis2Url, gis2Search } from "@/lib/gis";
 import { Icon } from "@/components/ui/Icon";
+
+const fmtM = (m: number) => (m < 950 ? `${m} м` : `${(m / 1000).toFixed(1).replace(".", ",")} км`);
 
 /**
  * Мини-карта на реальных координатах: объект в центре, ближайшие места 2ГИС
@@ -86,14 +88,36 @@ export function PropertyMap({
             </g>
           ))}
 
-          {/* пины POI (реальные места 2ГИС) */}
+          {/* пины POI (реальные места 2ГИС) — кликабельны, открываются в 2ГИС */}
           {placed.map(({ x, y, p }, i) => (
-            <g key={i}>
-              <circle cx={x} cy={y} r={11} fill="#fff" stroke="#E7E2D9" strokeWidth={1} />
+            <a
+              key={i}
+              href={gis2Search(p.name, p.lat, p.lng)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group/pin"
+              style={{ cursor: "pointer" }}
+            >
+              <title>
+                {`${p.name} · ${fmtM(p.distM)} · ${p.walkMin} мин пешком${
+                  p.rating != null ? ` · ★ ${p.rating.toFixed(1)}` : ""
+                } — открыть в 2ГИС`}
+              </title>
+              {/* невидимая увеличенная зона клика */}
+              <circle cx={x} cy={y} r={14} fill="transparent" />
+              <circle
+                cx={x}
+                cy={y}
+                r={11}
+                fill="#fff"
+                stroke="#E7E2D9"
+                strokeWidth={1}
+                className="transition-all group-hover/pin:stroke-[#B98B3E] group-hover/pin:stroke-2"
+              />
               <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={12}>
                 {p.emoji}
               </text>
-            </g>
+            </a>
           ))}
 
           {/* объект в центре */}
@@ -103,6 +127,9 @@ export function PropertyMap({
 
         <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-[11px] font-semibold text-ink shadow-soft backdrop-blur">
           <span className="h-2 w-2 rounded-full bg-gold" /> Объект
+        </span>
+        <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/85 px-2 py-1 text-[10px] font-medium text-text-soft shadow-soft backdrop-blur">
+          <Icon name="arrow-up-right" size={11} className="text-gold" /> Нажмите на место — откроется в 2ГИС
         </span>
       </div>
 

@@ -26,7 +26,7 @@ import { LeadForm } from "@/components/LeadForm";
 import { PropertyCard } from "@/components/PropertyCard";
 import { Gallery } from "@/components/property/Gallery";
 import { BookingCtas } from "@/components/property/BookingCtas";
-import { NearbyInfra } from "@/components/property/NearbyInfra";
+import { NearbyInfraPanel } from "@/components/property/NearbyInfraPanel";
 import { PropertyMap } from "@/components/property/PropertyMap";
 import { nearby } from "@/lib/poi";
 
@@ -61,8 +61,11 @@ export default async function PropertyPage({
   const similar = getSimilar(p, 3);
 
   // Реальная инфраструктура вокруг объекта по данным 2ГИС (только Бишкек).
-  // Вычисляется на этапе SSG-сборки — в клиент уходит лишь результат.
-  const near = p.coords ? nearby(p.coords.lat, p.coords.lng) : null;
+  // Вычисляется на этапе SSG-сборки для трёх радиусов — в клиент уходит
+  // лишь компактный результат (без самого датасета poi.json).
+  const near1000 = p.coords ? nearby(p.coords.lat, p.coords.lng, 1000) : null;
+  const near = p.coords ? nearby(p.coords.lat, p.coords.lng, 1500) : null;
+  const near3000 = p.coords ? nearby(p.coords.lat, p.coords.lng, 3000) : null;
 
   const created = new Date(p.createdAt).toLocaleDateString("ru-RU", {
     day: "numeric",
@@ -349,8 +352,10 @@ export default async function PropertyPage({
             {/* ─────────── Инфраструктура ─────────── */}
             <section>
               {near ? (
-                // Реальные данные 2ГИС (Бишкек)
-                <NearbyInfra data={near} />
+                // Реальные данные 2ГИС (Бишкек) с переключателем радиуса
+                <NearbyInfraPanel
+                  sets={{ "1000": near1000, "1500": near, "3000": near3000 }}
+                />
               ) : (
                 // Фолбэк для объектов вне покрытия 2ГИС (Иссык-Куль, зарубежье)
                 <>
@@ -406,7 +411,7 @@ export default async function PropertyPage({
                 title="Расположение объекта"
                 subtitle={
                   near
-                    ? "Объект и ближайшие места из 2ГИС — по реальным координатам."
+                    ? "Объект и ближайшие места из 2ГИС — по реальным координатам. Нажмите на пин, чтобы открыть место в 2ГИС."
                     : undefined
                 }
               />
