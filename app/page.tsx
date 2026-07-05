@@ -289,7 +289,7 @@ export default function HomePage() {
           {districts.map((d) => (
             <Link
               key={d.slug}
-              href={`/catalog?district=${d.slug}`}
+              href={`/districts/${d.slug}`}
               className="group flex flex-col rounded-2xl border border-line bg-surface p-5 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-lift"
             >
               <div className="flex items-start justify-between gap-3">
@@ -309,7 +309,7 @@ export default function HomePage() {
                 ))}
               </div>
               <div className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-gold">
-                Смотреть объекты
+                Гид по району
                 <Icon
                   name="arrow-right"
                   size={14}

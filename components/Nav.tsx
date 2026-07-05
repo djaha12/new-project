@@ -7,9 +7,29 @@ import { site } from "@/lib/site";
 import type { dict } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/components/i18n";
+import { useFavorites } from "@/lib/useFavorites";
 import { Icon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/Button";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { CurrencySwitcher } from "@/components/CurrencySwitcher";
+
+function SavedLink() {
+  const { count, ready } = useFavorites();
+  return (
+    <Link
+      href="/saved"
+      aria-label="Избранное"
+      className="relative flex h-9 w-9 items-center justify-center rounded-full border border-line text-text-soft transition-colors hover:border-line-strong hover:text-gold"
+    >
+      <Icon name="star" size={17} />
+      {ready && count > 0 && (
+        <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[10px] font-bold text-white">
+          {count}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 type NavKey = keyof (typeof dict)["ru"]["nav"];
 const NAV_ITEMS: { href: string; key: NavKey }[] = [
@@ -57,17 +77,17 @@ export function Nav() {
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
+          <CurrencySwitcher />
           <LanguageSwitcher />
-          <Button href="/ai" variant="ghost" size="sm" icon="sparkles">
-            {d.nav.aiPick}
-          </Button>
+          <SavedLink />
           <Button href="/sell" variant="dark" size="sm">
             {d.nav.sellCta}
           </Button>
         </div>
 
-        <div className="flex items-center gap-1 lg:hidden">
-          <LanguageSwitcher />
+        <div className="flex items-center gap-1.5 lg:hidden">
+          <CurrencySwitcher />
+          <SavedLink />
           <button
             className="flex h-10 w-10 items-center justify-center rounded-lg text-text"
             onClick={() => setOpen((v) => !v)}
@@ -94,6 +114,9 @@ export function Nav() {
             <Button href="/sell" variant="dark" className="mt-2" onClick={() => setOpen(false)}>
               {d.nav.sellCta}
             </Button>
+            <div className="mt-3 flex items-center gap-2 border-t border-line pt-3">
+              <LanguageSwitcher />
+            </div>
           </nav>
         </div>
       )}

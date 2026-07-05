@@ -1,18 +1,21 @@
-import type { Broker } from "@/lib/types";
+import type { Broker, Property } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { ViewingScheduler } from "@/components/property/ViewingScheduler";
 
 /**
- * Ключевые действия по объекту: позвонить, написать в WhatsApp,
- * записаться на просмотр (ведёт к форме заявки #lead).
+ * Ключевые действия по объекту: позвонить, написать в WhatsApp, записаться на
+ * просмотр (слот-пикер ViewingScheduler, если передан объект — иначе #lead).
  * Переиспользуется в sticky-сайдбаре (stacked) и в блоке брокера.
  */
 export function BookingCtas({
   broker,
+  property,
   stacked = false,
   className,
 }: {
   broker: Broker;
+  property?: Property;
   stacked?: boolean;
   className?: string;
 }) {
@@ -35,9 +38,21 @@ export function BookingCtas({
       >
         WhatsApp
       </Button>
-      <Button href="#lead" variant="dark" icon="check-circle" className={full}>
-        Записаться на просмотр
-      </Button>
+      {property ? (
+        <ViewingScheduler
+          brokerName={broker.name}
+          brokerWhatsapp={broker.whatsapp}
+          propertyTitle={property.title}
+          propertyAddress={property.address}
+          priceUsd={property.price}
+          coords={property.coords}
+          triggerClassName={full}
+        />
+      ) : (
+        <Button href="#lead" variant="dark" icon="check-circle" className={full}>
+          Записаться на просмотр
+        </Button>
+      )}
     </div>
   );
 }

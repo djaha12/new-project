@@ -28,6 +28,21 @@ import { Gallery } from "@/components/property/Gallery";
 import { BookingCtas } from "@/components/property/BookingCtas";
 import { NearbyExplorer } from "@/components/property/NearbyExplorer";
 import { nearby } from "@/lib/poi";
+import { Price } from "@/components/Price";
+import { FavoriteButton } from "@/components/FavoriteButton";
+import { PriceHistory } from "@/components/property/PriceHistory";
+import { EstimateBlock } from "@/components/valuation/EstimateBlock";
+import { MortgageCalculator } from "@/components/mortgage/MortgageCalculator";
+import { InvestmentCalculator } from "@/components/invest/InvestmentCalculator";
+import { monthlyPayment } from "@/lib/data/banks";
+
+// Зарубежные страны → id инвест-направления (для ROI-калькулятора).
+const ABROAD_BY_COUNTRY: Record<string, string> = {
+  "ОАЭ": "dubai-invest",
+  "Турция": "turkey-living",
+  "Казахстан": "almaty-capital",
+  "Грузия": "batumi-sea",
+};
 
 export function generateStaticParams() {
   return properties.map((p) => ({ slug: p.slug }));
@@ -65,6 +80,10 @@ export default async function PropertyPage({
   const near1000 = p.coords ? nearby(p.coords.lat, p.coords.lng, 1000) : null;
   const near = p.coords ? nearby(p.coords.lat, p.coords.lng, 1500) : null;
   const near3000 = p.coords ? nearby(p.coords.lat, p.coords.lng, 3000) : null;
+
+  const abroadId = p.isForeign ? ABROAD_BY_COUNTRY[p.country] : undefined;
+  const isResidential = p.category === "apartment" || p.category === "house" || p.category === "room";
+  const sidebarMonthly = isResidential ? monthlyPayment(p.price * 0.8, 14, 15) : 0;
 
   const created = new Date(p.createdAt).toLocaleDateString("ru-RU", {
     day: "numeric",
@@ -138,7 +157,7 @@ export default async function PropertyPage({
 
               <div className="mt-6 flex flex-wrap items-end gap-x-4 gap-y-2">
                 <span className="font-display text-4xl leading-none text-text sm:text-5xl">
-                  {formatPrice(p.price)}
+                  <Price usd={p.price} />
                 </span>
                 <span className="pb-1 text-sm text-text-muted">
                   {pricePerUnit(p.price, p.area, p.areaUnit)}
@@ -149,6 +168,11 @@ export default async function PropertyPage({
                   </Badge>
                 )}
                 {p.exchange && <Badge tone="neutral">Обмен</Badge>}
+                <FavoriteButton
+                  slug={p.slug}
+                  variant="labeled"
+                  className="ml-auto border border-line"
+                />
               </div>
 
               <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-text-soft">
@@ -162,10 +186,10 @@ export default async function PropertyPage({
                     {m}
                   </span>
                 ))}
-                <span className="flex items-center gap-3">
-                  <span className="h-1 w-1 rounded-full bg-line-strong" />
-                  Обновлено {created}
-                </span>
+              </div>
+
+              <div className="mt-5">
+                <PriceHistory property={p} />
               </div>
             </header>
 
@@ -234,6 +258,9 @@ export default async function PropertyPage({
               </p>
             </section>
 
+            {/* ─────────── MULK Estimate (AVM) — только внутренний рынок ─────────── */}
+            {!p.isForeign && <EstimateBlock property={p} />}
+
             {/* ─────────── Характеристики ─────────── */}
             <section>
               <BlockHead eyebrow="Параметры" title="Характеристики объекта" />
@@ -249,6 +276,16 @@ export default async function PropertyPage({
                   </div>
                 ))}
               </dl>
+            </section>
+
+            {/* ─────────── Ипотека / платёж ─────────── */}
+            <section>
+              <BlockHead
+                eyebrow="Финансы"
+                title="Ипотека и ежемесячный платёж"
+                subtitle="Рассчитайте платёж и подберите программу банка КР. Или узнайте, объект какой цены вам по силам."
+              />
+              <MortgageCalculator priceUsd={p.price} />
             </section>
 
             {/* ─────────── Что можно построить? (только участки) ─────────── */}
@@ -323,6 +360,15 @@ export default async function PropertyPage({
                     {tag}
                   </Badge>
                 ))}
+              </div>
+
+              <div className="mt-8 border-t border-line pt-8">
+                <div className="eyebrow mb-4">Калькулятор доходности</div>
+                <InvestmentCalculator
+                  priceUsd={p.price}
+                  district={p.isForeign ? undefined : p.district}
+                  abroadId={abroadId}
+                />
               </div>
             </section>
 
@@ -505,7 +551,7 @@ export default async function PropertyPage({
                     </div>
                   </div>
                   <div className="sm:ml-auto">
-                    <BookingCtas broker={broker} />
+                    <BookingCtas broker={broker} property={p} />
                   </div>
                 </div>
               </section>
@@ -520,11 +566,19 @@ export default async function PropertyPage({
                 Цена объекта
               </div>
               <div className="mt-1 font-display text-3xl leading-none text-text">
-                {formatPrice(p.price)}
+                <Price usd={p.price} approx />
               </div>
               <div className="mt-1.5 text-sm text-text-muted">
                 {pricePerUnit(p.price, p.area, p.areaUnit)}
               </div>
+              {sidebarMonthly > 0 && (
+                <div className="mt-3 rounded-xl bg-surface-2 px-3 py-2 text-xs text-text-soft">
+                  <span className="inline-flex flex-wrap items-center gap-1">
+                    <Icon name="landmark" size={12} className="text-gold" /> Ипотека от{" "}
+                    <Price usd={sidebarMonthly} className="font-semibold text-text" />/мес
+                  </span>
+                </div>
+              )}
               {(p.installment || p.exchange) && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {p.installment && (
@@ -537,7 +591,7 @@ export default async function PropertyPage({
               )}
               {broker && (
                 <div className="mt-5">
-                  <BookingCtas broker={broker} stacked />
+                  <BookingCtas broker={broker} property={p} stacked />
                 </div>
               )}
               <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-text-muted">

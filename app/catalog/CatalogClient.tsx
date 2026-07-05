@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { CATEGORY_ICON } from "@/components/ui/category";
 import { PropertyCard } from "@/components/PropertyCard";
+import { SavedSearches } from "@/components/saved/SavedSearches";
 import nearbyGroups from "@/lib/data/nearbyGroups.json";
 
 // Предвычисленные группы 2ГИС рядом с каждым объектом (радиус 1,5 км).
@@ -410,6 +411,8 @@ export function CatalogClient({
                 Сбросить фильтры
               </button>
             )}
+
+            <SavedSearches className="border-t border-line pt-5" />
           </div>
         </aside>
 

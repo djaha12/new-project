@@ -34,6 +34,8 @@ export function Footer() {
       title: d.footer.colServices,
       links: [
         { label: l.aiAnalysis, href: "/ai" },
+        { label: l.estimate, href: "/estimate" },
+        { label: l.districts, href: "/districts" },
         { label: l.sell, href: "/sell" },
         { label: l.abroad, href: "/abroad" },
         { label: l.brokers, href: "/brokers" },
@@ -42,6 +44,7 @@ export function Footer() {
     {
       title: d.footer.colCabinets,
       links: [
+        { label: l.saved, href: "/saved" },
         { label: l.sellerCabinet, href: "/dashboard/seller" },
         { label: l.brokerCabinet, href: "/dashboard/broker" },
       ],

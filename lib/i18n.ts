@@ -58,6 +58,9 @@ interface Dict {
       brokers: string;
       sellerCabinet: string;
       brokerCabinet: string;
+      estimate: string;
+      districts: string;
+      saved: string;
     };
     disclaimer: string;
   };
@@ -109,6 +112,9 @@ export const dict: Record<Locale, Dict> = {
         brokers: "Наши брокеры",
         sellerCabinet: "Кабинет продавца",
         brokerCabinet: "Кабинет брокера",
+        estimate: "Оценить объект",
+        districts: "Районы Бишкека",
+        saved: "Избранное",
       },
       disclaimer: "AI-анализ не является юридическим заключением.",
     },
@@ -158,6 +164,9 @@ export const dict: Record<Locale, Dict> = {
         brokers: "Биздин брокерлер",
         sellerCabinet: "Сатуучунун кабинети",
         brokerCabinet: "Брокердин кабинети",
+        estimate: "Объектти баалоо",
+        districts: "Бишкектин райондору",
+        saved: "Тандалмалар",
       },
       disclaimer: "AI-талдоо юридикалык корутунду болуп саналбайт.",
     },
@@ -207,6 +216,9 @@ export const dict: Record<Locale, Dict> = {
         brokers: "Our brokers",
         sellerCabinet: "Seller dashboard",
         brokerCabinet: "Broker dashboard",
+        estimate: "Estimate a property",
+        districts: "Bishkek districts",
+        saved: "Saved",
       },
       disclaimer: "AI analysis is not a legal conclusion.",
     },

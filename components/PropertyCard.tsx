@@ -4,10 +4,14 @@ import {
   TIER_LABELS,
   type Property,
 } from "@/lib/types";
-import { cn, formatArea, formatPrice, pluralize } from "@/lib/utils";
+import { cn, formatArea, pluralize } from "@/lib/utils";
 import { getBroker } from "@/lib/data/brokers";
 import nearbyCounts from "@/lib/data/nearbyCounts.json";
+import { monthlyPayment } from "@/lib/data/banks";
+import { priceHistory } from "@/lib/priceHistory";
 import { PropertyMedia } from "@/components/PropertyMedia";
+import { Price } from "@/components/Price";
+import { FavoriteButton } from "@/components/FavoriteButton";
 import { Badge } from "@/components/ui/Badge";
 import { Icon } from "@/components/ui/Icon";
 import { CATEGORY_ICON } from "@/components/ui/category";
@@ -33,6 +37,11 @@ export function PropertyCard({
   // Кол-во мест 2ГИС в радиусе 1,5 км (предвычислено; 0 у загородных объектов).
   const nearbyN = (nearbyCounts as Record<string, number>)[p.id] ?? 0;
 
+  const ph = priceHistory(p);
+  // Ориентир ипотеки (кредит 80%, 14%, 15 лет) — для жилья.
+  const showMortgage = p.category === "apartment" || p.category === "house" || p.category === "room";
+  const monthly = showMortgage ? monthlyPayment(p.price * 0.8, 14, 15) : 0;
+
   return (
     <Link
       href={href}
@@ -50,17 +59,25 @@ export function PropertyCard({
                 {TIER_LABELS[p.tier]}
               </Badge>
             )}
+            {ph.reduced && (
+              <Badge tone="emerald" icon="trending">
+                ↓ {ph.reducedPct}%
+              </Badge>
+            )}
           </div>
-          {p.videoSec && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-black/40 px-2 py-1 text-[11px] font-medium text-white backdrop-blur">
-              <Icon name="play" size={11} />
-              {p.videoSec}с
-            </span>
-          )}
+          <div className="flex items-center gap-1.5">
+            {p.videoSec && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-black/40 px-2 py-1 text-[11px] font-medium text-white backdrop-blur">
+                <Icon name="play" size={11} />
+                {p.videoSec}с
+              </span>
+            )}
+            <FavoriteButton slug={p.slug} className="bg-white/90 shadow-soft backdrop-blur" />
+          </div>
         </div>
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-3">
           <span className="rounded-lg bg-white/95 px-2.5 py-1 text-sm font-semibold text-ink shadow-soft">
-            {formatPrice(p.price)}
+            <Price usd={p.price} />
           </span>
           <span className="inline-flex items-center gap-1 rounded-full bg-black/35 px-2 py-1 text-[11px] font-medium text-white backdrop-blur">
             <Icon name={CATEGORY_ICON[p.category]} size={12} />
@@ -96,13 +113,21 @@ export function PropertyCard({
           ))}
         </div>
 
-        {nearbyN > 0 && (
-          <div className="mt-2.5 inline-flex items-center gap-1 self-start rounded-md bg-emerald-soft px-1.5 py-1 text-[11px] font-medium text-emerald">
-            <Icon name="map-pin" size={11} />
-            {nearbyN} {pluralize(nearbyN, ["место", "места", "мест"])} рядом
-            <span className="text-emerald/70">· 2ГИС</span>
-          </div>
-        )}
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          {nearbyN > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-soft px-1.5 py-1 text-[11px] font-medium text-emerald">
+              <Icon name="map-pin" size={11} />
+              {nearbyN} {pluralize(nearbyN, ["место", "места", "мест"])} рядом
+              <span className="text-emerald/70">· 2ГИС</span>
+            </span>
+          )}
+          {showMortgage && monthly > 0 && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-text-muted">
+              <Icon name="landmark" size={11} className="text-gold" />
+              ипотека от <Price usd={monthly} className="font-semibold text-text-soft" />/мес
+            </span>
+          )}
+        </div>
 
         <div className="mt-auto flex items-center justify-between border-t border-line pt-3">
           <span className="truncate text-xs text-text-muted">

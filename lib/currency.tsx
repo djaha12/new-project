@@ -53,11 +53,13 @@ export function useCurrency(): Ctx {
   return ctx;
 }
 
-/** Форматирование суммы (в USD на входе) в выбранной валюте. */
+/** Форматирование суммы (в USD на входе) в выбранной валюте.
+ *  Округляем до целых единиц — иначе дробная часть в ru-RU даёт запятую,
+ *  которую замена на пробел превращает в лишний разряд («3 409,258» → «3 409 258»). */
 export function fmtMoney(usd: number, currency: Currency, rate = USD_KGS): string {
   if (currency === "KGS") {
     const som = Math.round((usd * rate) / 1000) * 1000;
-    return som.toLocaleString("ru-RU").replace(/,/g, " ") + " сом";
+    return som.toLocaleString("ru-RU").replace(/ /g, " ") + " сом";
   }
-  return "$ " + usd.toLocaleString("ru-RU").replace(/,/g, " ");
+  return "$ " + Math.round(usd).toLocaleString("ru-RU").replace(/ /g, " ");
 }
