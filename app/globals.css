@@ -23,7 +23,10 @@
   }
 
   h1, h2, h3, h4 {
-    @apply text-text tracking-tight;
+    /* Наследуем цвет от контейнера: на светлом фоне — text (от body),
+       на тёмных секциях (bg-ink text-text-invert) — светлый. Это не даёт
+       заголовкам «пропадать» на тёмных hero-блоках. */
+    @apply tracking-tight;
     text-wrap: balance;
   }
 
