@@ -5,43 +5,47 @@ on:
     branches: [claude/realestate-broker-platform-8svfl9]
   workflow_dispatch:
 
+# contents:write нужен, чтобы запушить собранный сайт в ветку gh-pages
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: pages-deploy
+  cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      # enablement:true включает GitHub Pages (source = Actions) автоматически
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
+
       - run: npm ci
+
+      # Статический экспорт Next.js: basePath = /new-project (project pages)
       - run: npm run build
         env:
           STATIC_EXPORT: "1"
           PAGES_BASE_PATH: /new-project
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./out
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      # .nojekyll — иначе GitHub Pages (Jekyll) выкинет папку _next/ (с "_")
+      - run: touch out/.nojekyll
+
+      # Публикуем содержимое out/ в ветку gh-pages обычным git-пушем.
+      # Работает всегда (не требует включённого Pages), сайт появляется
+      # после того, как в Settings → Pages выбрать источник gh-pages.
+      - name: Publish to gh-pages
+        run: |
+          cd out
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Deploy ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
