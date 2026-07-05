@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { properties } from "@/lib/data/properties";
+import { compareFallback } from "@/lib/ai";
 import { SCORE_LABELS, type AiScore } from "@/lib/types";
 import { cn, formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -28,24 +29,14 @@ export function CompareTool() {
     );
   }
 
-  async function compare() {
+  function compare() {
     if (selected.length < 2 || loading) return;
     setLoading(true);
-    setVerdict(null);
-    try {
-      const res = await fetch("/api/compare", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ids: selected }),
-      });
-      const data = (await res.json()) as { verdict: string; live: boolean };
-      setVerdict(data.verdict);
-      setLive(Boolean(data.live));
-    } catch {
-      setVerdict("Не удалось сравнить объекты. Попробуйте ещё раз.");
-    } finally {
-      setLoading(false);
-    }
+    // Вердикт считается на клиенте (compareFallback) — работает на статике.
+    const data = compareFallback(selected);
+    setVerdict(data.verdict);
+    setLive(false);
+    setLoading(false);
   }
 
   const chosen = selected

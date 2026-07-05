@@ -8,7 +8,8 @@ import {
   type Tier,
 } from "@/lib/types";
 import { districts } from "@/lib/data/districts";
-import { cn } from "@/lib/utils";
+import { estimateFromInput } from "@/lib/valuation";
+import { cn, formatArea, formatPrice } from "@/lib/utils";
 import { Price } from "@/components/Price";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -58,35 +59,28 @@ export function EstimateForm({ className }: { className?: string }) {
     setAreaUnit(c === "land" ? "sotka" : "m2");
   };
 
-  async function submit(e: FormEvent) {
+  function submit(e: FormEvent) {
     e.preventDefault();
     const area = toNum(areaStr);
     if (area <= 0 || loading) return;
     setLoading(true);
     setError(null);
-    try {
-      const res = await fetch("/api/estimate", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          category,
-          district,
+    // Оценка считается на клиенте прозрачным движком (estimateFromInput) —
+    // работает и на статике, без серверного роута.
+    const est = estimateFromInput({ category, areaUnit, area, tier, district });
+    const unitTxt = est.areaUnit === "m2" ? "м²" : "сотку";
+    const narrative = est.base
+      ? `По ${est.compsCount} сопоставимым предложениям сегмента «${CATEGORY_LABELS[category]}»${
+          !["land"].includes(category) ? ` в районе ${district}` : ""
+        } медиана — ${formatPrice(est.medianUnit)} за ${unitTxt}. Для объекта ${formatArea(
           area,
           areaUnit,
-          tier,
-          floor: floorStr ? toNum(floorStr) : undefined,
-        }),
-      });
-      if (!res.ok) throw new Error("bad");
-      const data = (await res.json()) as EstimateResponse;
-      setResult(data);
-    } catch {
-      setError(
-        "Не удалось рассчитать оценку. Попробуйте ещё раз или оставьте заявку — брокер оценит вручную.",
-      );
-    } finally {
-      setLoading(false);
-    }
+        )} уровня «${TIER_LABELS[tier]}» рыночный ориентир — от ${formatPrice(
+          est.low,
+        )} до ${formatPrice(est.high)}, обоснованная цена — около ${formatPrice(est.base)}.`
+      : "Недостаточно сопоставимых объектов для точной оценки — брокер оценит вручную по заявке.";
+    setResult({ ...est, narrative, live: false });
+    setLoading(false);
   }
 
   // Единицу для панели результата берём из ОТВЕТА (result.areaUnit), а не из

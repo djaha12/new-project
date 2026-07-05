@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CATEGORY_LABELS,
   TIER_LABELS,
@@ -9,6 +9,7 @@ import {
   type Property,
   type Tier,
 } from "@/lib/types";
+import { districts } from "@/lib/data/districts";
 import { cn, formatPrice, pluralize } from "@/lib/utils";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
@@ -67,13 +68,7 @@ function roundTo(value: number, step: number, dir: "up" | "down"): number {
   return fn(value / step) * step;
 }
 
-export function CatalogClient({
-  properties,
-  initial,
-}: {
-  properties: Property[];
-  initial: CatalogInitial;
-}) {
+export function CatalogClient({ properties }: { properties: Property[] }) {
   // Границы ползунка цены — из реального инвентаря.
   const priceCeil = useMemo(
     () => roundTo(Math.max(...properties.map((p) => p.price)), 10000, "up"),
@@ -93,27 +88,48 @@ export function CatalogClient({
     [properties],
   );
 
-  const [category, setCategory] = useState<CategoryFilter>(initial.category);
-  const [tier, setTier] = useState<TierFilter>(initial.tier);
-  const [deal, setDeal] = useState<DealFilter>(initial.deal);
-  const [district, setDistrict] = useState<string>(
-    initial.district !== "all" && districtOptions.includes(initial.district)
-      ? initial.district
-      : "all",
-  );
-  const [q, setQ] = useState(initial.q);
+  // Дефолтные фильтры (страница статическая); значения из URL применяем на клиенте.
+  const [category, setCategory] = useState<CategoryFilter>("all");
+  const [tier, setTier] = useState<TierFilter>("all");
+  const [deal, setDeal] = useState<DealFilter>("all");
+  const [district, setDistrict] = useState<string>("all");
+  const [q, setQ] = useState("");
   const [amenities, setAmenities] = useState<string[]>([]);
-  const [sort, setSort] = useState<SortKey>(initial.sort);
+  const [sort, setSort] = useState<SortKey>("score");
+  const [maxPrice, setMaxPrice] = useState<number>(priceCeil);
+  const [showFilters, setShowFilters] = useState(false);
 
   const toggleAmenity = (key: string) =>
     setAmenities((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
     );
-  const [maxPrice, setMaxPrice] = useState<number>(() => {
-    if (initial.max == null) return priceCeil;
-    return Math.min(Math.max(initial.max, priceFloor), priceCeil);
-  });
-  const [showFilters, setShowFilters] = useState(false);
+
+  // Применяем фильтры из URL (?category=&q=&district=&tier=&deal=&max=&sort=)
+  // после монтирования — так первый рендер совпадает с SSR (нет рассинхрона).
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const cat = sp.get("category");
+    if (cat && CATS.includes(cat as Category)) setCategory(cat as Category);
+    const t = sp.get("tier");
+    if (t && TIERS.includes(t as Tier)) setTier(t as Tier);
+    const d = sp.get("deal");
+    if (d === "sale" || d === "rent") setDeal(d);
+    const query = sp.get("q");
+    if (query) setQ(query.trim());
+    const so = sp.get("sort");
+    if (so === "price-desc") setSort("price-desc");
+    else if (so === "price-asc" || so === "price") setSort("price-asc");
+    const rawDistrict = (sp.get("district") ?? "").trim();
+    if (rawDistrict) {
+      const bySlug = districts.find((x) => x.slug === rawDistrict);
+      const byName = districts.find((x) => x.name.toLowerCase() === rawDistrict.toLowerCase());
+      const name = bySlug?.name ?? byName?.name ?? rawDistrict;
+      if (districtOptions.includes(name)) setDistrict(name);
+    }
+    const mx = Number(sp.get("max"));
+    if (Number.isFinite(mx) && mx > 0) setMaxPrice(Math.min(Math.max(mx, priceFloor), priceCeil));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const priceIsCapped = maxPrice < priceCeil;
 

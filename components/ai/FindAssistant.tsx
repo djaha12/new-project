@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { properties } from "@/lib/data/properties";
+import { findFallback } from "@/lib/ai";
 import { cn } from "@/lib/utils";
 import { PropertyCard } from "@/components/PropertyCard";
 import { Button } from "@/components/ui/Button";
@@ -21,28 +22,19 @@ export function FindAssistant({ compact = false }: { compact?: boolean }) {
   const [ids, setIds] = useState<string[]>([]);
   const [live, setLive] = useState(false);
 
-  async function run(q: string) {
+  function run(q: string) {
     const text = q.trim();
     if (!text || loading) return;
     setQuery(text);
     setLoading(true);
     setReply(null);
-    try {
-      const res = await fetch("/api/find", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ query: text }),
-      });
-      const data = (await res.json()) as { reply: string; ids: string[]; live: boolean };
-      setReply(data.reply);
-      setIds(data.ids || []);
-      setLive(Boolean(data.live));
-    } catch {
-      setReply("Не удалось получить ответ. Попробуйте ещё раз или оставьте заявку — брокер подберёт вручную.");
-      setIds([]);
-    } finally {
-      setLoading(false);
-    }
+    // Подбор считается на клиенте детерминированным движком (findFallback) —
+    // работает и на статике, без серверного роута.
+    const data = findFallback(text);
+    setReply(data.reply);
+    setIds(data.ids || []);
+    setLive(false);
+    setLoading(false);
   }
 
   const matched = ids
